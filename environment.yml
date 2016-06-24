@@ -1,0 +1,9 @@
+name: event_db
+dependencies:
+- pip
+- python
+- scipy
+- numpy
+- pandas
+- matplotlib
+- jupyter
