@@ -1,14 +1,14 @@
 import luigi
 
 from tasks.pipeline import Pipeline
-from tasks.generic import GenericTask
-
-from pipelines.dataset_collector import DatasetCollectorPipeline
+import tasks.icews.icews
+import tasks.ucdp.ged
 
 class Main(Pipeline):
     def requires(self):
         pipelines = [
-            DatasetCollectorPipeline()
+            tasks.ucdp.ged.GED_DatabaseWriter(pipeline = self),
+            tasks.icews.icews.ICEWS_DatabaseWriter(pipeline = self)
         ]
         return pipelines
 

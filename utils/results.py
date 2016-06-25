@@ -8,8 +8,9 @@ class Results(dict):
     def __init__(self, task):
         self.pipeline = task.pipeline
         self.task_id = task.task_id
+        self.task_module = task.task_module
         self.task_family = task.task_family
-        filename = "%s.json" % (self.task_family)
+        filename = "%s.%s.json" % (self.task_module, self.task_family)
         self.target = luigi.LocalTarget(os.path.join(self.pipeline.results_folder, filename))
         super(Results, self).__init__()
 
@@ -17,6 +18,7 @@ class Results(dict):
         header = {
             'pipeline': self.pipeline.task_family,
             'task_id': self.task_id,
+            'task_module': self.task_module,
             'task_family': self.task_family,
             'timestamp': datetime.datetime.now().isoformat(),
             'status': status

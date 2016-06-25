@@ -12,16 +12,19 @@ from tasks.generic import GenericTask
 from tasks.httpdownload import HttpDownload
 from tasks.zip import ZipFileExtractor
 
+import utils.config
+import utils.database
 import utils.dataverse
 import utils.md5
 
 class DatasetDownloader(GenericTask):
-    ICEWS_DATASET_FOLDER = os.path.join(os.getcwd(), "datasets/icews")
+    ICEWS_CONFIG = "icews.yaml"
+    DOWNLOADS_FOLDER = os.path.join(os.getcwd(), "downloads/icews")
 
     def requires(self):
         queue = list()
 
-        dataverse = utils.dataverse.DataverseAPI(config_path=os.path.dirname(__file__))
+        dataverse = utils.dataverse.DataverseAPI(self.ICEWS_CONFIG)
         contents = dataverse.request("dataverses/icews/contents")
 
         for data in filter(lambda d: d['type']=='dataset', contents['data']):
@@ -34,7 +37,7 @@ class DatasetDownloader(GenericTask):
 
                 filename = f['datafile']['name']
                 checksum = f['datafile']['md5']
-                target = os.path.join(self.ICEWS_DATASET_FOLDER, dataset_id, filename)
+                target = os.path.join(self.DOWNLOADS_FOLDER, dataset_id, filename)
 
                 if os.path.isfile(target) and utils.md5.file_checksum(target, hex=True) == checksum:
                     if zipfile.is_zipfile(target):
@@ -42,7 +45,7 @@ class DatasetDownloader(GenericTask):
                         queue.append(ZipFileExtractor(pipeline=self.pipeline, filename=target))
                 else:
                     self.logger.debug("Queueing HttpDownload, target = %s" % target)
-                    queue.append(HttpDownload(url, checksum, target))
+                    queue.append(HttpDownload(url, target, checksum))
 
         # now try to download the dataset
         yield queue
@@ -74,12 +77,10 @@ class DatasetBatchCleaner(GenericTask):
     def local_target(self, source_filename):
         match = re.match(r"^events\.(\d{4})\.(\d{14})\.tab$", os.path.basename(source_filename))
         target_filename = "events.%s.csv" % match.group(1)
-        return luigi.LocalTarget(os.path.join(self.results_folder,
-                                              self.target_folder,
-                                              target_filename))
+        return luigi.LocalTarget(os.path.join(self.target_folder, target_filename))
 
     def sources(self):
-        events_folder = os.path.join(DatasetDownloader.ICEWS_DATASET_FOLDER, "65874")
+        events_folder = os.path.join(DatasetDownloader.DOWNLOADS_FOLDER, "65874")
         return glob.glob(os.path.join(events_folder, "*.tab"))
 
     def output(self):
@@ -92,29 +93,25 @@ class DatasetBatchCleaner(GenericTask):
         filespec = zip(self.sources(), self.output())
         yield [self.dataset_cleaner(fs[0], fs[1].fn) for fs in filespec]
 
-class DatasetCollector(GenericTask):
-    EVENTS_FOLDER = "events"
-    EVENTS_FILENAME = "events.csv"
-
-    def output(self):
-        return luigi.LocalTarget(os.path.join(self.results_folder,
-                                              self.EVENTS_FOLDER,
-                                              self.EVENTS_FILENAME))
+class ICEWS_DatabaseWriter(GenericTask):
+    DB_CONFIG = "database.yaml"
+    TABLE_NAME = "icews"
+    DATASET_FOLDER = os.path.join(os.getcwd(), "datasets/icews")
 
     def requires(self):
-        target_folder = os.path.dirname(self.output().fn)
-        return DatasetBatchCleaner(pipeline=self.pipeline, target_folder=target_folder)
+        return DatasetBatchCleaner(pipeline=self.pipeline, target_folder=self.DATASET_FOLDER)
 
     def run(self):
-        self.logger.debug("Loading inputs")
-        frames = [pd.read_csv(i.fn, index_col=0, encoding="utf-8") for i in self.input()]
+        self.logger.debug("Connecting to database")
+        config = utils.config.Config(self.DB_CONFIG)
+        config.load()
 
-        self.logger.debug("Concatenating frames")
-        #df = pd.concat(frames)
+        db = utils.database.Database(config.get('url'))
+        db.connect()
 
-        #self.logger.debug("Saving output, %s" % self.output().fn)
-        #with self.output().open("w") as f:
-        #    df.to_csv(f, encoding="utf-8")
-
+        for i in self.input()[0:5]:
+            self.logger.debug("Updating table, source = %s" % i.fn)
+            #df = pd.read_csv(i.fn, index_col=0, encoding="utf-8")
+            #db.write(self.TABLE_NAME, df)
 
 

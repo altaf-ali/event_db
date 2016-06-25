@@ -10,8 +10,8 @@ import utils.logger
 
 class HttpDownload(utils.logger.GenericLogger, luigi.Task):
     url = luigi.Parameter()
-    checksum = luigi.Parameter()
     target = luigi.Parameter()
+    checksum = luigi.Parameter(default = 0)
 
     timeout = 10
     chunk_size = 512
@@ -35,6 +35,10 @@ class HttpDownload(utils.logger.GenericLogger, luigi.Task):
             return "Checksum error: %s -> %s mismatch" % (self.url, self.target)
 
     def compare_checksum(self):
+        if self.checksum == 0:
+            self.logger.warn("Ignoring checksum, file = %s" % self.target)
+            return True
+
         result = self.checksum == utils.md5.file_checksum(self.target, hex=True)
         if not result:
             self.logger.warn("Checksum mismatch, file=%s" % self.target)
