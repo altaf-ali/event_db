@@ -1,0 +1,65 @@
+### Event DB Example
+
+```{r message = FALSE}
+library(yaml)
+library(RPostgreSQL)
+library(ggplot2)
+library(scales)
+library(httr)
+library(dplyr)
+```
+
+Clear the environment
+
+```{r}
+rm(list = ls())
+```
+
+Load the database config file
+
+```{r}
+CONFIG_FILE <- "/Users/altaf/Projects/event_db/config/database.yaml"
+
+config <- yaml.load_file(CONFIG_FILE)
+url <- parse_url(config$url)
+```
+
+Connect to the database
+
+```{r}
+event_db <- src_postgres(url$path, 
+                         url$hostname,
+                         url$port,
+                         url$username,
+                         url$password)
+      
+icews_events <- tbl(event_db, "icews")
+```
+
+Summarize the events
+
+```{r}
+events <- icews_events %>%
+  group_by(EventDate) %>%
+  summarise(Count = n()) %>%
+  collect() %>%
+  mutate(EventDate = as.Date(EventDate)) 
+```
+
+Plot the results
+
+```{r}
+ggplot(events, aes(EventDate, Count)) +
+  ggtitle("Daily") +
+  geom_line(color = "steelblue") +
+  theme(axis.text.x = element_text(angle = 30),
+        axis.title.x = element_blank(), 
+        axis.title.y = element_blank()) +
+  scale_x_date(date_breaks = "1 year", 
+               date_minor_breaks = "1 year",
+               date_labels = "%Y") +
+  scale_y_continuous(name="Num Events", labels = comma)
+```
+
+
+
