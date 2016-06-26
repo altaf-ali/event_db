@@ -61,7 +61,7 @@ class GED_DatabaseWriter(GenericTask):
         for f in files:
             self.logger.debug("Updating table, source = %s" % f)
             df = pd.read_csv(f, index_col=0, encoding="utf-8")
-            #db.write(self.TABLE_NAME, df)
+            db.write(self.TABLE_NAME, df)
 
 
 

@@ -2,7 +2,6 @@ import sqlalchemy
 
 import utils.logger
 
-
 class Database(utils.logger.GenericLogger):
     def __init__(self,  url):
         self.url = url
@@ -12,7 +11,7 @@ class Database(utils.logger.GenericLogger):
     def connect(self):
         self.db = sqlalchemy.create_engine(self.url)
 
-    def write(self, table_name, df, chunk_size = 1000):
+    def write(self, table_name, df, chunk_size = 5000):
         num_rows = len(df)
 
         for i in range(0, num_rows, chunk_size):

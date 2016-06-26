@@ -111,7 +111,5 @@ class ICEWS_DatabaseWriter(GenericTask):
 
         for i in self.input()[0:5]:
             self.logger.debug("Updating table, source = %s" % i.fn)
-            #df = pd.read_csv(i.fn, index_col=0, encoding="utf-8")
-            #db.write(self.TABLE_NAME, df)
-
-
+            df = pd.read_csv(i.fn, index_col=0, encoding="utf-8")
+            db.write(self.TABLE_NAME, df)

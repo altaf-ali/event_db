@@ -1,1 +1,2 @@
-url: "postgres://postgres:qwerty@146.148.2.81:5432/postgres"
+url-old: postgres://postgres:qwerty@146.148.2.81:5432/postgres
+url: postgres://postgres:zaqwsx@146.148.112.145:5432/postgres
