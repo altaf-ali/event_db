@@ -1,2 +1,9 @@
-url-old: postgres://postgres:qwerty@146.148.2.81:5432/postgres
-url: postgres://postgres:zaqwsx@146.148.112.145:5432/postgres
+google:
+  url: postgres://postgres:zaqwsx@146.148.112.145:5432/postgres
+
+google-old:
+  url: postgres://postgres:qwerty@146.148.2.81:5432/postgres
+
+local:
+  url: postgres://events_writer@localhost:5432/events
+  readonly_user: events_reader

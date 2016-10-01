@@ -10,7 +10,7 @@ import luigi
 
 from tasks.generic import GenericTask
 from tasks.httpdownload import HttpDownload
-from tasks.zip import ZipFileExtractor
+import tasks.zip
 
 import utils.config
 import utils.database
@@ -32,17 +32,17 @@ class DatasetDownloader(GenericTask):
             dataset = dataverse.request("datasets", dataset_id)
 
             for f in dataset['data']['latestVersion']['files']:
-                file_id = str(f['datafile']['id'])
+                file_id = str(f['dataFile']['id'])
                 url = dataverse.url("access/datafile", file_id)
 
-                filename = f['datafile']['name']
-                checksum = f['datafile']['md5']
+                filename = f['dataFile']['filename']
+                checksum = f['dataFile']['md5']
                 target = os.path.join(self.DOWNLOADS_FOLDER, dataset_id, filename)
 
                 if os.path.isfile(target) and utils.md5.file_checksum(target, hex=True) == checksum:
                     if zipfile.is_zipfile(target):
                         self.logger.debug("Queueing ZipFileExtractor, target = %s" % target)
-                        queue.append(ZipFileExtractor(pipeline=self.pipeline, filename=target))
+                        queue.append(tasks.zip.ZipFileExtractor(pipeline=self.pipeline, filename=target))
                 else:
                     self.logger.debug("Queueing HttpDownload, target = %s" % target)
                     queue.append(HttpDownload(url, target, checksum))
@@ -95,6 +95,7 @@ class DatasetBatchCleaner(GenericTask):
 
 class ICEWS_DatabaseWriter(GenericTask):
     DB_CONFIG = "database.yaml"
+    DB_TARGET = 'local'
     TABLE_NAME = "icews"
     DATASET_FOLDER = os.path.join(os.getcwd(), "datasets/icews")
 
@@ -106,10 +107,13 @@ class ICEWS_DatabaseWriter(GenericTask):
         config = utils.config.Config(self.DB_CONFIG)
         config.load()
 
-        db = utils.database.Database(config.get('url'))
+        db = utils.database.Database(config.get(self.DB_TARGET))
         db.connect()
 
-        for i in self.input()[0:5]:
+        for i in self.input():
             self.logger.debug("Updating table, source = %s" % i.fn)
-            df = pd.read_csv(i.fn, index_col=0, encoding="utf-8")
+            df = pd.read_csv(i.fn, index_col=0, encoding="utf-8", parse_dates=['EventDate'])
+            df['Year'] = df.EventDate.dt.year
+            df['Month'] = df.EventDate.dt.month
+            df['Day'] = df.EventDate.dt.day
             db.write(self.TABLE_NAME, df)

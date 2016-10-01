@@ -10,7 +10,7 @@ class Results(dict):
         self.task_id = task.task_id
         self.task_module = task.task_module
         self.task_family = task.task_family
-        filename = "%s.%s.json" % (self.task_module, self.task_family)
+        filename = "{0}.json".format(self.task_family)
         self.target = luigi.LocalTarget(os.path.join(self.pipeline.results_folder, filename))
         super(Results, self).__init__()
 

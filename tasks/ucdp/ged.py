@@ -45,6 +45,7 @@ class GED_DatabaseWriter(GenericTask):
     DB_CONFIG = "database.yaml"
     TABLE_NAME = "ged"
     DATASET_FOLDER = os.path.join(os.getcwd(), "datasets/ucdp/ged")
+    DB_TARGET = 'local'
 
     def requires(self):
         return DatasetExtractor(pipeline=self.pipeline, target_folder = self.DATASET_FOLDER)
@@ -54,13 +55,13 @@ class GED_DatabaseWriter(GenericTask):
         config = utils.config.Config(self.DB_CONFIG)
         config.load()
 
-        db = utils.database.Database(config.get('url'))
+        db = utils.database.Database(config.get(self.DB_TARGET))
         db.connect()
 
         files = glob.glob(os.path.join(self.DATASET_FOLDER, "ged*.csv"))
         for f in files:
-            self.logger.debug("Updating table, source = %s" % f)
             df = pd.read_csv(f, index_col=0, encoding="utf-8")
+            self.logger.debug("Updating table (%d rows), source = %s" % (len(df), f))
             db.write(self.TABLE_NAME, df)
 
 

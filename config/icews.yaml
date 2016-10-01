@@ -2,4 +2,6 @@
 dataverse:
   url: https://dataverse.harvard.edu/api/
   params:
-    key: 83b7eccc-7d70-4710-b86f-569fac7d586c
+    key: b67966bb-b5b3-40be-9040-0077d1fe8fab
+    old-key: 83b7eccc-7d70-4710-b86f-569fac7d586c
+

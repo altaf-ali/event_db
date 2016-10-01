@@ -1,6 +1,7 @@
 import os
 import json
 import importlib
+import collections
 
 import luigi
 
@@ -56,9 +57,15 @@ class GenericTask(utils.logger.GenericLogger, luigi.Task):
         map(lambda d: d.clean(), self.deps())
 
         # make sure it's a file and NOT a directory
-        if self.output() and os.path.isfile(self.output().fn):
-            self.logger.debug("Removing " + self.output().fn)
-            self.output().remove()
+        output = self.output()
+        if output:
+            if (not isinstance(output, collections.Iterable)):
+                output = [output]
+
+            for o in output:
+                if (os.path.isfile(o.fn)):
+                    self.logger.debug("Removing " + o.fn)
+                    o.remove()
 
     def complete(self):
         #for dep in self.deps():

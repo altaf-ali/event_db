@@ -1,14 +1,14 @@
 import luigi
 
 from tasks.pipeline import Pipeline
-import tasks.icews.icews
-import tasks.ucdp.ged
+from tasks.ucdp.ged import GED_DatabaseWriter
+from tasks.icews.icews import ICEWS_DatabaseWriter
 
 class Main(Pipeline):
     def requires(self):
         pipelines = [
-            tasks.ucdp.ged.GED_DatabaseWriter(pipeline = self),
-            tasks.icews.icews.ICEWS_DatabaseWriter(pipeline = self)
+            GED_DatabaseWriter(pipeline = self),
+            ICEWS_DatabaseWriter(pipeline = self)
         ]
         return pipelines
 
