@@ -1,5 +1,6 @@
 import pandas as pd
 import sqlalchemy
+import yurl
 
 import utils.logger
 
@@ -7,10 +8,18 @@ class Database(utils.logger.GenericLogger):
     def __init__(self,  config):
         self.config = config
         self.db = None
+        self.readonly_username = None
         super(Database, self).__init__()
 
     def connect(self):
-        self.db = sqlalchemy.create_engine(self.config['url'])
+        url = self.config['url']
+        db_writer = self.config['writer']
+        if (db_writer):
+            parsed_url = yurl.URL(url)
+            self.readonly_username = parsed_url.username
+            url = str(parsed_url.replace(userinfo=':'.join([db_writer['username'], db_writer['password']])))
+        self.logger.debug("  URL = %s" % url)
+        self.db = sqlalchemy.create_engine(url)
 
     def primary_key(self, df):
         return ','.join('"{0}"'.format(i) for i in df.index.names)
@@ -26,10 +35,9 @@ class Database(utils.logger.GenericLogger):
             df_empty = df.drop(df.index)
             df_empty.to_sql(table_name, self.db)
             self.db.execute('ALTER TABLE %s ADD PRIMARY KEY (%s);' % (table_name, self.primary_key(df)))
-            readonly_user = self.config['readonly_user']
-            if readonly_user:
+            if self.readonly_username:
                 with self.db.begin() as conn:
-                    conn.execute('GRANT SELECT ON %s TO %s;' % (table_name, self.config['readonly_user']))
+                    conn.execute('GRANT SELECT ON %s TO %s;' % (table_name, self.readonly_username))
 
     def write(self, table_name, df, chunk_size = 100000):
 

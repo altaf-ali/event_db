@@ -21,7 +21,7 @@ Load the database config file
 CONFIG_FILE <- "https://raw.github.com/altaf-ali/event_db/master/config/database.yaml"
 
 config <- yaml.load_file(CONFIG_FILE)
-url <- parse_url(config$url)
+url <- parse_url(config$local$url)
 ```
 
 Connect to the database
