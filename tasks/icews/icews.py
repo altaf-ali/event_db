@@ -3,6 +3,8 @@ import glob
 import os
 import re
 import zipfile
+import math
+import datetime
 
 import pandas as pd
 
@@ -110,10 +112,19 @@ class ICEWS_DatabaseWriter(GenericTask):
         db = utils.database.Database(config.get(self.DB_TARGET))
         db.connect()
 
-        for i in self.input():
+        start_date = None
+        for i in sorted(self.input()):
             self.logger.debug("Updating table, source = %s" % i.fn)
             df = pd.read_csv(i.fn, index_col=0, encoding="utf-8", parse_dates=['EventDate'])
+
+            if not start_date:
+                start_date = min(df.EventDate)
+
+            #week = [int(math.floor((d - start_date).days / 7)) for d in df.EventDate]
+
             df['Year'] = df.EventDate.dt.year
             df['Month'] = df.EventDate.dt.month
             df['Day'] = df.EventDate.dt.day
+            df['Week'] = df.EventDate.dt.week
+
             db.write(self.TABLE_NAME, df)
